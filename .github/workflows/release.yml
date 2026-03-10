@@ -1,0 +1,143 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如：v1.0.0)'
+        required: false
+        default: 'manual'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 GBDK-2020
+        run: |
+          wget -q https://github.com/gbdk-2020/gbdk-2020/releases/download/release%2Fv4.3.0/gbdk-4.3.0-Linux-64.zip
+          unzip -q gbdk-4.3.0-Linux-64.zip
+          mv gbdk-4.3.0 /opt/gbdk
+          echo "GBDK_HOME=/opt/gbdk" >> $GITHUB_ENV
+
+      - name: 构建游戏
+        run: |
+          make clean
+          make
+
+      - name: 准备发布文件
+        run: |
+          mkdir -p release_files
+          cp 2048.gb release_files/
+          cp README.md release_files/
+          cp MANUAL.md release_files/
+
+      - name: 生成构建信息
+        run: |
+          echo "构建时间：$(date '+%Y-%m-%d %H:%M:%S')" > release_files/BUILD_INFO.txt
+          echo "提交信息:" >> release_files/BUILD_INFO.txt
+          git log -1 --format="%B" >> release_files/BUILD_INFO.txt
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2048-gb-build
+          path: release_files/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: 下载构建产物
+        uses: actions/download-artifact@v4
+        with:
+          name: 2048-gb-build
+          path: release_files/
+
+      - name: 设置版本信息
+        id: version_info
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            if [[ "$VERSION" == "manual" ]]; then
+              VERSION="manual-$(date +%Y%m%d-%H%M%S)"
+            fi
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "filename_suffix=$VERSION" >> $GITHUB_OUTPUT
+          else
+            VERSION="${{ github.ref_name }}"
+            TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "filename_suffix=${VERSION}-${TIMESTAMP}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 重命名发布文件
+        run: |
+          SUFFIX="${{ steps.version_info.outputs.filename_suffix }}"
+          cd release_files
+          mv 2048.gb 2048-${SUFFIX}.gb
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            mv README.md README-${SUFFIX}.md
+            mv MANUAL.md MANUAL-${SUFFIX}.md
+          fi
+
+      - name: 获取提交信息
+        id: commit_info
+        run: |
+          COMMIT_MSG=$(git log -1 --format="%s")
+          COMMIT_BODY=$(git log -1 --format="%b")
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          {
+            echo "commit_body<<EOF"
+            echo "$COMMIT_BODY"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version_info.outputs.version }}
+          name: Release ${{ steps.version_info.outputs.version }}
+          body: |
+            ## 更新内容
+            
+            ${{ steps.commit_info.outputs.commit_msg }}
+            
+            ${{ steps.commit_info.outputs.commit_body }}
+            
+            ---
+            
+            ## 文件说明
+            
+            - `2048-${{ steps.version_info.outputs.filename_suffix }}.gb` - 游戏 ROM 文件
+            - `README-*.md` - 快速开始说明
+            - `MANUAL-*.md` - 详细游戏说明书
+            
+            ## 操作说明
+            
+            | Game Boy 按键 | SameBoy (Mac) | 功能 |
+            |--------------|--------------|------|
+            | **A** | **X** | 重新开始游戏 |
+            | **方向键** | **方向键** | 移动方块 |
+            
+            ## 游戏规则
+            
+            1. 使用方向键移动所有方块
+            2. 相同数字的方块碰撞时会合并
+            3. 目标是合并出 **2048** 方块
+          files: |
+            release_files/2048-${{ steps.version_info.outputs.filename_suffix }}.gb
+            release_files/README-${{ steps.version_info.outputs.filename_suffix }}.md
+            release_files/MANUAL-${{ steps.version_info.outputs.filename_suffix }}.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
