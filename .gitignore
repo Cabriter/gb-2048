@@ -1,0 +1,7 @@
+# Build outputs
+*.gb
+*.ihx
+*.map
+*.noi
+*.sav
+obj/
