@@ -11,6 +11,9 @@ on:
         required: false
         default: 'manual'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -92,10 +95,8 @@ jobs:
           SUFFIX="${{ steps.version_info.outputs.filename_suffix }}"
           cd release_files
           mv 2048.gb 2048-${SUFFIX}.gb
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            mv README.md README-${SUFFIX}.md
-            mv MANUAL.md MANUAL-${SUFFIX}.md
-          fi
+          mv README.md README-${SUFFIX}.md
+          mv MANUAL.md MANUAL-${SUFFIX}.md
 
       - name: 获取提交信息
         id: commit_info
