@@ -126,6 +126,22 @@
     <script>
         const ROM_FILE = '2048.gb';
         
+        // 检查 ROM 文件是否存在
+        async function checkRomFile() {
+            try {
+                const response = await fetch(ROM_FILE, { method: 'HEAD' });
+                if (!response.ok) {
+                    throw new Error(`ROM 文件不存在 (HTTP ${response.status})`);
+                }
+                const size = response.headers.get('content-length');
+                console.log(`ROM 文件存在，大小：${size} bytes`);
+                return true;
+            } catch (error) {
+                console.error('ROM 文件检查失败:', error);
+                throw error;
+            }
+        }
+        
         // 加载 EmulatorJS
         async function loadEmulator() {
             const versionInfo = document.getElementById('versionInfo');
@@ -133,7 +149,12 @@
             const container = document.getElementById('game-container');
             
             try {
+                // 先检查 ROM 文件
+                versionInfo.textContent = '正在检查 ROM...';
+                await checkRomFile();
+                
                 // 加载 EmulatorJS
+                versionInfo.textContent = '正在加载模拟器...';
                 await new Promise((resolve, reject) => {
                     const script = document.createElement('script');
                     script.src = 'https://cdn.emulatorjs.org/stable/data/emulator.min.js';
@@ -157,20 +178,21 @@
                 
                 console.log('EmulatorJS 配置完成');
                 
-                // 等待渲染
+                // 等待渲染 - 延长检查时间
+                let checkCount = 0;
                 const checkCanvas = setInterval(() => {
+                    checkCount++;
+                    console.log(`检查 canvas... ${checkCount}`);
                     if (document.querySelector('#game-container canvas')) {
                         clearInterval(checkCanvas);
                         versionInfo.textContent = '🎮 游戏运行中';
+                        console.log('游戏画面已渲染');
                     }
-                }, 500);
-                
-                setTimeout(() => {
-                    clearInterval(checkCanvas);
-                    if (!document.querySelector('#game-container canvas')) {
+                    if (checkCount > 60) { // 30 秒超时
+                        clearInterval(checkCanvas);
                         throw new Error('游戏加载超时');
                     }
-                }, 10000);
+                }, 500);
                 
             } catch (error) {
                 console.error('加载失败:', error);

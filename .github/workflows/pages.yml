@@ -44,6 +44,8 @@ jobs:
       - name: 复制 GB 文件到 docs
         run: |
           cp 2048.gb docs/
+          ls -la docs/
+          echo "File size: $(stat -c%s docs/2048.gb 2>/dev/null || stat -f%z docs/2048.gb) bytes"
 
       - name: 设置 Pages
         uses: actions/configure-pages@v4
