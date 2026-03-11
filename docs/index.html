@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2048 Game Boy - 在线游玩</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -21,34 +16,24 @@
             padding: 20px;
             color: #fff;
         }
-
-        h1 {
-            margin-bottom: 10px;
-            font-size: 2rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
+        h1 { margin-bottom: 10px; font-size: 2rem; }
         .version-info {
             background: rgba(255,255,255,0.1);
             padding: 8px 16px;
             border-radius: 20px;
             margin-bottom: 20px;
-            font-size: 0.9rem;
         }
-
-        .game-container {
+        .game-frame {
             background: #2d2d44;
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-
-        #game-container {
-            width: 640px;
-            height: 576px;
-            max-width: 100%;
+        iframe {
+            border: none;
+            border-radius: 10px;
+            background: #000;
         }
-
         .controls-info {
             margin-top: 20px;
             background: rgba(255,255,255,0.1);
@@ -56,26 +41,18 @@
             border-radius: 10px;
             text-align: center;
         }
-
-        .controls-info h3 {
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-
         .key-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 10px;
             margin-top: 10px;
         }
-
         .key-item {
             background: rgba(255,255,255,0.1);
             padding: 8px 12px;
             border-radius: 5px;
             font-size: 0.85rem;
         }
-
         .key-item kbd {
             background: #4a4a6a;
             padding: 3px 8px;
@@ -83,7 +60,6 @@
             font-family: monospace;
             margin-right: 5px;
         }
-
         .links {
             margin-top: 20px;
             display: flex;
@@ -91,41 +67,13 @@
             flex-wrap: wrap;
             justify-content: center;
         }
-
         .links a {
             color: #4fc3f7;
             text-decoration: none;
             padding: 8px 16px;
             background: rgba(79, 195, 247, 0.1);
             border-radius: 20px;
-            transition: all 0.3s;
         }
-
-        .links a:hover {
-            background: rgba(79, 195, 247, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #888;
-        }
-
-        .loading-spinner {
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #4fc3f7;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
         .error {
             background: rgba(244, 67, 54, 0.2);
             border: 1px solid #f44336;
@@ -133,12 +81,7 @@
             border-radius: 10px;
             margin-top: 20px;
             color: #ef5350;
-        }
-
-        @media (max-width: 600px) {
-            h1 { font-size: 1.5rem; }
-            .game-container { padding: 10px; }
-            #game-container { width: 100%; height: auto; aspect-ratio: 10/9; }
+            display: none;
         }
     </style>
 </head>
@@ -146,80 +89,90 @@
     <h1>🎮 2048 Game Boy</h1>
     <div class="version-info" id="versionInfo">正在加载游戏...</div>
 
-    <div class="game-container">
-        <div id="game-container">
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <div>正在加载模拟器...</div>
-            </div>
-        </div>
+    <div class="game-frame">
+        <iframe id="game-frame" width="640" height="576" src="about:blank"></iframe>
     </div>
 
     <div class="controls-info">
         <h3>🎯 操作说明</h3>
         <div class="key-grid">
-            <div class="key-item"><kbd>↑↓←→</kbd> 方向键移动</div>
-            <div class="key-item"><kbd>Z</kbd> A 键 (开始/重置)</div>
+            <div class="key-item"><kbd>↑↓←→</kbd> 方向键</div>
+            <div class="key-item"><kbd>Z</kbd> A 键</div>
             <div class="key-item"><kbd>X</kbd> B 键</div>
-            <div class="key-item"><kbd>Enter</kbd> Start 键</div>
-            <div class="key-item"><kbd>Shift</kbd> Select 键</div>
+            <div class="key-item"><kbd>Enter</kbd> Start</div>
+            <div class="key-item"><kbd>Shift</kbd> Select</div>
         </div>
     </div>
 
     <div class="links">
-        <a href="https://github.com/Cabriter/gb-2048" target="_blank">GitHub 仓库</a>
-        <a href="https://github.com/Cabriter/gb-2048/releases" target="_blank">所有版本</a>
-        <a href="https://github.com/Cabriter/gb-2048/blob/main/README.md" target="_blank">使用说明</a>
+        <a href="https://github.com/Cabriter/gb-2048" target="_blank">GitHub</a>
+        <a href="https://github.com/Cabriter/gb-2048/releases" target="_blank">Releases</a>
     </div>
 
-    <div id="error" class="error" style="display: none;"></div>
+    <div id="error" class="error"></div>
 
     <script>
-        // 显示错误
-        function showError(message) {
-            const errorEl = document.getElementById('error');
-            errorEl.textContent = '⚠️ ' + message;
-            errorEl.style.display = 'block';
-        }
+        const ROM_FILE = '2048.gb';
+        
+        // 使用 lzh995535 的 JS Game Boy 模拟器
+        const emulatorHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; }
+        body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script src="https://cdn.jsdelivr.net/gh/lzh995535/js-gameboy@master/dist/js-gameboy.min.js"><\/script>
+    <script>
+        const gb = new GameBoy(document.getElementById('canvas'), '${ROM_FILE}', {
+            width: 160,
+            height: 144,
+            scale: 4,
+            autoStart: true
+        });
+        gb.load().then(() => {
+            gb.start();
+            console.log('Game loaded!');
+        }).catch(err => {
+            console.error('Load failed:', err);
+        });
+    <\/script>
+</body>
+</html>`;
 
-        // 加载 EmulatorJS
-        function loadEmulatorJS() {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.emulatorjs.org/stable/data/emulator.min.js';
-                script.onload = resolve;
-                script.onerror = () => reject(new Error('EmulatorJS 加载失败'));
-                document.head.appendChild(script);
-            });
-        }
-
-        // 初始化模拟器
-        async function initEmulator() {
-            try {
-                // 等待 EmulatorJS 加载
-                await loadEmulatorJS();
-                
-                // 配置 EmulatorJS
-                window.EJS_player = '#game-container';
-                window.EJS_gameUrl = '2048.gb';
-                window.EJS_core = 'gb';
-                window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-                window.EJS_startOnLoaded = true;
-                window.EJS_fullscreenOnLoaded = false;
-                window.EJS_color = '#4fc3f7';
-                
-                console.log('EmulatorJS 配置完成，开始加载...');
-                
-                // 更新状态
-                document.getElementById('versionInfo').textContent = '游戏加载中...';
-            } catch (error) {
-                console.error('初始化失败:', error);
-                showError('模拟器初始化失败：' + error.message);
-            }
+        // 加载模拟器
+        function loadEmulator() {
+            const iframe = document.getElementById('game-frame');
+            const blob = new Blob([emulatorHTML], { type: 'text/html' });
+            iframe.src = URL.createObjectURL(blob);
+            
+            iframe.onload = () => {
+                document.getElementById('versionInfo').textContent = '游戏运行中';
+                console.log('模拟器加载完成');
+            };
+            
+            iframe.onerror = () => {
+                document.getElementById('error').textContent = '⚠️ 模拟器加载失败，请刷新页面';
+                document.getElementById('error').style.display = 'block';
+            };
+            
+            // 超时检测
+            setTimeout(() => {
+                if (document.getElementById('versionInfo').textContent === '正在加载游戏...') {
+                    document.getElementById('error').textContent = '⚠️ 加载超时，请刷新页面';
+                    document.getElementById('error').style.display = 'block';
+                }
+            }, 10000);
         }
 
         // 启动
-        initEmulator();
+        loadEmulator();
     </script>
 </body>
 </html>
