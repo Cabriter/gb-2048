@@ -1,0 +1,9 @@
+# Disable gzip compression for ROM files
+# GitHub Pages uses Jekyll, which can be configured via _config.yml
+
+# Tell Jekyll not to process these files
+exclude:
+  - "*.gb"
+
+# Disable gzip for specific file types
+# Note: This is handled by GitHub's CDN, not Jekyll

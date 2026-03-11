@@ -46,11 +46,18 @@ jobs:
       - name: 准备部署文件
         run: |
           mkdir -p deploy
-          cp -v 2048.gb deploy/
-          cp -v docs/* deploy/
+          # 使用 tag 作为版本号
+          VERSION=${GITHUB_REF#refs/tags/}
+          cp -v 2048.gb "deploy/2048-${VERSION}.gb"
+          # 更新 index.html 中的 ROM 文件名
+          sed -i "s/2048\.gb/2048-${VERSION}.gb/g" docs/index.html
+          cp -v docs/index.html deploy/
           ls -la deploy/
           echo "Deploy contents:"
           for f in deploy/*; do echo "  $f: $(stat -c%s "$f" 2>/dev/null || stat -f%z "$f") bytes"; done
+          # 恢复 index.html
+          sed -i "s/2048-${VERSION}.gb/2048.gb/g" docs/index.html
+          git checkout docs/index.html 2>/dev/null || true
 
       - name: 设置 Pages
         uses: actions/configure-pages@v4
