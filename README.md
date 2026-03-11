@@ -2,6 +2,12 @@
 
 使用 GBDK-2020 开发的经典 2048 游戏，可在 Game Boy / Game Boy Color 上运行。
 
+## 🎮 在线游玩
+
+**现在可以在浏览器中直接游玩！**
+
+访问 [GitHub Pages](https://cabriter.github.io/gb-2048) 即可在线游玩，无需下载 ROM 文件。
+
 ## 游戏截图
 
 ```
