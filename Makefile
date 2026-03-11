@@ -12,6 +12,9 @@ LCC = $(GBDK_HOME)/bin/lcc
 # 编译标志
 LCCFLAGS += -Wl-yt0x1B -Wl-j -Wm-yoA -Wm-ya4 -autobank -Wb-ext=.rel -Wb-v
 
+# 架构设置 (GBDK v4.5+ 使用 sm83，旧版本使用 gbz80)
+ARCH = sm83:gb
+
 # 项目设置
 PROJECTNAME = 2048
 SRCDIR = src
@@ -27,11 +30,11 @@ all: $(BINDIR)/$(PROJECTNAME).gb
 # 编译 .c 到 .o
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(OBJDIR)
-	$(LCC) -msm83:gb -c -o $@ $<
+	$(LCC) -m$(ARCH) -c -o $@ $<
 
 # 链接 .o 到 .gb
 $(BINDIR)/$(PROJECTNAME).gb: $(OBJS)
-	$(LCC) $(LCCFLAGS) -msm83:gb -o $@ $(OBJS)
+	$(LCC) $(LCCFLAGS) -m$(ARCH) -o $@ $(OBJS)
 
 # 清理
 clean:

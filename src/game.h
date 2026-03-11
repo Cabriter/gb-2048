@@ -7,11 +7,19 @@
 #define GRID_SIZE 4
 
 // 游戏状态
+typedef enum {
+    STATE_LOGO,
+    STATE_PLAYING,
+    STATE_GAMEOVER
+} GameState;
+
+// 游戏数据结构
 typedef struct {
     uint16_t grid[GRID_SIZE][GRID_SIZE];  // 4x4 网格，存储 2 的幂次
     uint16_t score;
     uint8_t game_over;
     uint8_t won;
+    GameState state;
 } Game;
 
 // 方向定义

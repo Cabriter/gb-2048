@@ -37,7 +37,7 @@ jobs:
       - name: 构建游戏
         run: |
           make clean
-          make GBDK_HOME=/opt/gbdk
+          make GBDK_HOME=/opt/gbdk ARCH=sm83:gb
 
       - name: 准备发布文件
         run: |
