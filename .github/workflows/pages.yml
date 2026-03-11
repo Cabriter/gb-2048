@@ -1,8 +1,6 @@
 name: Deploy to GitHub Pages
 
 on:
-  release:
-    types: [published]
   push:
     tags:
       - 'v*'
@@ -18,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -27,30 +25,21 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 下载最新 Release 的 GB 文件
+      - name: 安装 GBDK-2020
         run: |
-          # 获取最新 release
-          LATEST_RELEASE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest)
-          
-          # 获取 .gb 文件下载链接
-          GB_URL=$(echo "$LATEST_RELEASE" | grep -o '"browser_download_url": "[^"]*\.gb"' | head -1 | cut -d'"' -f4)
-          
-          if [ -n "$GB_URL" ]; then
-            echo "下载 GB 文件：$GB_URL"
-            curl -L -o docs/2048.gb "$GB_URL"
-          else
-            echo "未找到 GB 文件，尝试从 release body 解析"
-            # 尝试从 release body 中解析文件名
-            GB_FILE=$(echo "$LATEST_RELEASE" | grep -o '"name": "2048-[^"]*\.gb"' | head -1 | cut -d'"' -f4)
-            if [ -n "$GB_FILE" ]; then
-              TAG=$(echo "$LATEST_RELEASE" | grep -o '"tag_name": "[^"]*"' | head -1 | cut -d'"' -f4)
-              GB_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${GB_FILE}"
-              echo "下载 GB 文件：$GB_URL"
-              curl -L -o docs/2048.gb "$GB_URL"
-            fi
-          fi
-          
-          ls -la docs/
+          curl -L -o gbdk.tar.gz https://github.com/gbdk-2020/gbdk-2020/releases/latest/download/gbdk-linux-x64.tar.gz
+          tar -xzf gbdk.tar.gz
+          mv gbdk /opt/gbdk
+          echo "GBDK_HOME=/opt/gbdk" >> $GITHUB_ENV
+
+      - name: 构建游戏
+        run: |
+          make clean
+          make GBDK_HOME=/opt/gbdk ARCH=sm83:gb
+
+      - name: 复制 GB 文件到 docs
+        run: |
+          cp 2048.gb docs/
 
       - name: 设置 Pages
         uses: actions/configure-pages@v4

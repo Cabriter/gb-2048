@@ -248,25 +248,9 @@
 
         // 初始化
         async function init() {
-            const isLocal = window.location.hostname === 'localhost' || 
-                           window.location.hostname === '127.0.0.1' ||
-                           window.location.protocol === 'file:';
-
-            if (isLocal) {
-                // 本地测试模式
-                document.getElementById('versionInfo').textContent = '本地测试模式 - 请确保 2048.gb 文件在同一目录';
-                loadEmulator(GAME_ROM);
-            } else {
-                // GitHub Pages 模式 - 使用最新的 release
-                const romUrl = await fetchLatestRelease();
-                if (romUrl) {
-                    loadEmulator(romUrl);
-                } else {
-                    // 回退到本地文件
-                    showError('无法获取最新版本信息，请确保已下载 ROM 文件');
-                    loadEmulator(GAME_ROM);
-                }
-            }
+            // 始终使用本地文件（由 Actions 部署时放置）
+            document.getElementById('versionInfo').textContent = '正在加载游戏...';
+            loadEmulator(GAME_ROM);
         }
 
         // 启动
