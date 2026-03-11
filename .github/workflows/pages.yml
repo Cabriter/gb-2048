@@ -40,12 +40,17 @@ jobs:
         run: |
           make clean
           make GBDK_HOME=/opt/gbdk ARCH=sm83:gb
+          ls -la *.gb
+          echo "GB file size: $(stat -c%s 2048.gb 2>/dev/null || stat -f%z 2048.gb) bytes"
 
-      - name: 复制 GB 文件到 docs
+      - name: 准备部署文件
         run: |
-          cp 2048.gb docs/
-          ls -la docs/
-          echo "File size: $(stat -c%s docs/2048.gb 2>/dev/null || stat -f%z docs/2048.gb) bytes"
+          mkdir -p deploy
+          cp -v 2048.gb deploy/
+          cp -v docs/* deploy/
+          ls -la deploy/
+          echo "Deploy contents:"
+          for f in deploy/*; do echo "  $f: $(stat -c%s "$f" 2>/dev/null || stat -f%z "$f") bytes"; done
 
       - name: 设置 Pages
         uses: actions/configure-pages@v4
@@ -53,7 +58,7 @@ jobs:
       - name: 上传 Pages 产物
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './docs'
+          path: './deploy'
 
       - name: 部署到 GitHub Pages
         id: deployment
