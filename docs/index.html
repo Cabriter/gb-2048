@@ -137,53 +137,11 @@
         }
         
         const ROM_FILE = getRomFilename();
+        // 使用 jsdelivr CDN 获取未压缩的 ROM (从 GitHub)
+        const ROM_URL = `https://cdn.jsdelivr.net/gh/Cabriter/gb-2048@main/docs/${ROM_FILE}`;
         
-        // 下载并解压 ROM 文件，返回 ArrayBuffer
-        async function downloadAndDecompressRom() {
-            const versionInfo = document.getElementById('versionInfo');
-            versionInfo.textContent = '正在下载 ROM...';
-            
-            try {
-                const response = await fetch(ROM_FILE);
-                if (!response.ok) {
-                    throw new Error(`下载失败：HTTP ${response.status}`);
-                }
-                
-                const compressedBuffer = await response.arrayBuffer();
-                console.log(`下载的压缩数据：${compressedBuffer.byteLength} bytes`);
-                
-                const dataView = new DataView(compressedBuffer);
-                const isGzip = dataView.getUint8(0) === 0x1f && dataView.getUint8(1) === 0x8b;
-                console.log(`是 gzip 格式：${isGzip}`);
-                
-                let romBuffer;
-                if (isGzip) {
-                    versionInfo.textContent = '正在解压 ROM...';
-                    const uint8Array = new Uint8Array(compressedBuffer);
-                    romBuffer = pako.inflate(uint8Array).buffer;
-                    console.log(`解压后大小：${romBuffer.byteLength} bytes`);
-                } else {
-                    romBuffer = compressedBuffer;
-                    console.log(`原始 ROM 大小：${romBuffer.byteLength} bytes`);
-                }
-                
-                return romBuffer;
-                
-            } catch (error) {
-                console.error('ROM 下载/解压失败:', error);
-                throw error;
-            }
-        }
-        
-        // 将 ArrayBuffer 转为 base64
-        function arrayBufferToBase64(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return btoa(binary);
-        }
+        console.log('ROM 文件:', ROM_FILE);
+        console.log('ROM URL:', ROM_URL);
         
         // 加载 EmulatorJS
         async function loadEmulator() {
@@ -192,15 +150,6 @@
             const container = document.getElementById('game-container');
             
             try {
-                // 下载并解压 ROM
-                const romBuffer = await downloadAndDecompressRom();
-                
-                // 转为 base64 数据 URL
-                versionInfo.textContent = '正在准备 ROM...';
-                const base64 = arrayBufferToBase64(romBuffer);
-                const romDataUrl = `data:application/octet-stream;base64,${base64}`;
-                console.log('ROM data URL 创建成功，长度:', base64.length);
-                
                 // 加载 EmulatorJS
                 versionInfo.textContent = '正在加载模拟器...';
                 await new Promise((resolve, reject) => {
@@ -211,27 +160,22 @@
                     document.head.appendChild(script);
                 });
                 
-                versionInfo.textContent = '正在启动游戏...';
+                versionInfo.textContent = '正在加载 ROM...';
                 
                 // 等待初始化
                 await new Promise(r => setTimeout(r, 500));
                 
-                // 配置 - 使用 data URL
+                // 配置 - 使用 jsdelivr 的 URL
                 window.EJS_player = '#game-container';
-                window.EJS_gameUrl = romDataUrl;
+                window.EJS_gameUrl = ROM_URL;
                 window.EJS_core = 'gb';
                 window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
                 window.EJS_startOnLoaded = true;
                 window.EJS_color = '#4fc3f7';
-                window.EJS_debug = true;
                 
-                console.log('EmulatorJS 配置完成，ROM Data URL');
-                console.log('等待 EmulatorJS 初始化...');
+                console.log('EmulatorJS 配置完成，ROM URL:', ROM_URL);
                 
-                // 等待更长时间
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                
-                // 检查是否加载成功
+                // 等待渲染
                 let checkCount = 0;
                 const checkCanvas = setInterval(() => {
                     checkCount++;
@@ -246,7 +190,7 @@
                     console.log(`等待 canvas... ${checkCount}/80`);
                     if (checkCount > 80) {
                         clearInterval(checkCanvas);
-                        throw new Error('游戏加载超时 - EmulatorJS 可能未正确初始化');
+                        throw new Error('游戏加载超时');
                     }
                 }, 500);
                 
@@ -257,7 +201,7 @@
                         <h2 style="margin-bottom: 20px;">⚠️ 在线模拟器加载失败</h2>
                         <p style="margin-bottom: 20px;">您可以：</p>
                         <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
-                            <a href="${ROM_FILE}" download class="links" style="background: #4fc3f7; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                            <a href="${ROM_URL}" download class="links" style="background: #4fc3f7; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
                                 📥 下载 ROM 文件
                             </a>
                             <p style="color: #888; font-size: 0.9rem;">
