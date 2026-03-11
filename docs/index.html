@@ -222,9 +222,10 @@
             iframe.style.border = 'none';
             iframe.allowFullscreen = true;
             iframe.allow = 'gamepad';
+            iframe.sandbox = 'allow-scripts allow-same-origin allow-pointer-lock allow-forms';
             
-            // 构建 EmulatorJS URL
-            const emulatorUrl = `https://emulatorjs.org/games/?core=gb&rom=${encodeURIComponent(romUrl)}`;
+            // 使用 EmulatorJS 官方 demo 页面格式
+            const emulatorUrl = `https://demo.emulatorjs.org/?core=gb&rom=${encodeURIComponent(romUrl)}`;
             iframe.src = emulatorUrl;
             
             gameDiv.appendChild(iframe);
