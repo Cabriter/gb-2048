@@ -217,21 +217,30 @@
                 window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
                 window.EJS_startOnLoaded = true;
                 window.EJS_color = '#4fc3f7';
+                window.EJS_debug = true;
                 
                 console.log('EmulatorJS 配置完成，ROM URL:', romUrl);
+                console.log('等待 EmulatorJS 初始化...');
                 
-                // 等待渲染
+                // 等待更长时间让 EmulatorJS 初始化
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // 检查是否加载成功
                 let checkCount = 0;
                 const checkCanvas = setInterval(() => {
                     checkCount++;
-                    if (document.querySelector('#game-container canvas')) {
+                    const canvas = document.querySelector('#game-container canvas');
+                    if (canvas) {
                         clearInterval(checkCanvas);
                         versionInfo.textContent = '🎮 游戏运行中';
-                        console.log('游戏画面已渲染');
+                        console.log('✅ 游戏画面已渲染！');
+                        console.log('Canvas 尺寸:', canvas.width, 'x', canvas.height);
+                        return;
                     }
-                    if (checkCount > 60) {
+                    console.log(`等待 canvas... ${checkCount}/80`);
+                    if (checkCount > 80) { // 40 秒超时
                         clearInterval(checkCanvas);
-                        throw new Error('游戏加载超时');
+                        throw new Error('游戏加载超时 - EmulatorJS 可能未正确初始化');
                     }
                 }, 500);
                 
