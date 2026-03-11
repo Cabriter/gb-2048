@@ -175,8 +175,7 @@
     <script>
         // 配置
         const GAME_ROM = '2048.gb';
-        const EMULATORJS_URL = 'https://cdn.emulatorjs.org/stable/data/emulator.min.js';
-
+        
         // 获取最新 release 信息
         async function fetchLatestRelease() {
             try {
@@ -189,13 +188,6 @@
                 const gbAsset = release.assets.find(asset => asset.name.endsWith('.gb'));
                 if (gbAsset) {
                     return gbAsset.browser_download_url;
-                }
-                
-                // 如果没有找到 asset，使用文件名匹配
-                const match = release.body.match(/`2048-(.*?)\.gb`/);
-                if (match) {
-                    // 需要从 release 下载页面获取
-                    console.log('需要从 release 下载 ROM 文件');
                 }
                 
                 return null;
@@ -213,46 +205,41 @@
             errorEl.style.display = 'block';
         }
 
-        // 加载模拟器
+        // 加载模拟器 - 使用 iframe 方式
         function loadEmulator(romUrl) {
             const gameDiv = document.getElementById('game');
             
-            // 创建模拟器容器
+            // 使用 EmulatorJS iframe 方式
             gameDiv.innerHTML = '';
-            gameDiv.style.width = '640px';
-            gameDiv.style.height = '512px';
-
-            // 设置 EmulatorJS 配置
-            window.EJS_player = '#game';
-            window.EJS_gameUrl = romUrl;
-            window.EJS_core = 'gb';
-            window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-            window.EJS_romName = '2048.gb';
-            window.EJS_color = '#4fc3f7';
-            window.EJS_startOnLoaded = true;
-
-            // 加载 EmulatorJS
-            const script = document.createElement('script');
-            script.src = EMULATORJS_URL;
-            script.onload = () => {
-                console.log('EmulatorJS 加载成功');
+            gameDiv.style.width = '100%';
+            gameDiv.style.maxWidth = '640px';
+            gameDiv.style.aspectRatio = '5.5/4';
+            gameDiv.style.background = '#000';
+            
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            iframe.allowFullscreen = true;
+            iframe.allow = 'gamepad';
+            
+            // 构建 EmulatorJS URL
+            const emulatorUrl = `https://emulatorjs.org/games/?core=gb&rom=${encodeURIComponent(romUrl)}`;
+            iframe.src = emulatorUrl;
+            
+            gameDiv.appendChild(iframe);
+            
+            iframe.onload = () => {
+                console.log('EmulatorJS iframe 加载成功');
             };
-            script.onerror = () => {
+            
+            iframe.onerror = () => {
                 showError('模拟器加载失败，请检查网络连接或稍后重试');
-                gameDiv.innerHTML = `
-                    <div class="loading">
-                        <div>😢 模拟器加载失败</div>
-                        <div style="margin-top: 10px; font-size: 0.9rem; color: #888;">
-                            请检查网络连接，或<a href="${romUrl}" download>下载 ROM 文件</a>在本地运行
-                        </div>
-                    </div>
-                `;
             };
-            document.head.appendChild(script);
 
             // 超时处理
             setTimeout(() => {
-                if (!window.EJS_emulator) {
+                if (!iframe.contentWindow) {
                     showError('模拟器加载超时，请刷新页面重试');
                 }
             }, 15000);
@@ -260,9 +247,6 @@
 
         // 初始化
         async function init() {
-            // 对于 GitHub Pages 部署，使用本地文件
-            // 对于本地测试，使用 release API
-            
             const isLocal = window.location.hostname === 'localhost' || 
                            window.location.hostname === '127.0.0.1' ||
                            window.location.protocol === 'file:';
@@ -277,7 +261,7 @@
                 if (romUrl) {
                     loadEmulator(romUrl);
                 } else {
-                    // 回退到本地文件（如果已经下载）
+                    // 回退到本地文件
                     showError('无法获取最新版本信息，请确保已下载 ROM 文件');
                     loadEmulator(GAME_ROM);
                 }
