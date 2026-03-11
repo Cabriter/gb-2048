@@ -126,17 +126,17 @@
     <script>
         const ROM_FILE = '2048.gb';
         
-        // 使用 Ruffle/EmulatorJS 的替代方案
+        // 加载 EmulatorJS
         async function loadEmulator() {
-            const container = document.getElementById('game-container');
             const versionInfo = document.getElementById('versionInfo');
             const errorEl = document.getElementById('error');
+            const container = document.getElementById('game-container');
             
             try {
-                // 动态加载 EmulatorJS
+                // 加载 EmulatorJS
                 await new Promise((resolve, reject) => {
                     const script = document.createElement('script');
-                    script.src = 'https://unpkg.com/emulatorjs@latest/data/emulator.min.js';
+                    script.src = 'https://cdn.emulatorjs.org/stable/data/emulator.min.js';
                     script.onload = resolve;
                     script.onerror = () => reject(new Error('EmulatorJS 加载失败'));
                     document.head.appendChild(script);
@@ -144,32 +144,53 @@
                 
                 versionInfo.textContent = '正在加载 ROM...';
                 
+                // 等待初始化
+                await new Promise(r => setTimeout(r, 500));
+                
                 // 配置
                 window.EJS_player = '#game-container';
                 window.EJS_gameUrl = ROM_FILE;
                 window.EJS_core = 'gb';
-                window.EJS_pathtodata = 'https://unpkg.com/emulatorjs@latest/data/';
+                window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
                 window.EJS_startOnLoaded = true;
                 window.EJS_color = '#4fc3f7';
-                window.EJS_enableCheats = false;
                 
                 console.log('EmulatorJS 配置完成');
                 
-                // 等待初始化
-                setTimeout(() => {
-                    if (window.EJS_emulator) {
+                // 等待渲染
+                const checkCanvas = setInterval(() => {
+                    if (document.querySelector('#game-container canvas')) {
+                        clearInterval(checkCanvas);
                         versionInfo.textContent = '🎮 游戏运行中';
-                        console.log('游戏已启动');
-                    } else {
-                        throw new Error('模拟器初始化超时');
                     }
-                }, 3000);
+                }, 500);
+                
+                setTimeout(() => {
+                    clearInterval(checkCanvas);
+                    if (!document.querySelector('#game-container canvas')) {
+                        throw new Error('游戏加载超时');
+                    }
+                }, 10000);
                 
             } catch (error) {
                 console.error('加载失败:', error);
-                errorEl.textContent = '⚠️ ' + error.message + ' - 请刷新页面重试';
-                errorEl.style.display = 'block';
-                versionInfo.textContent = '加载失败';
+                // 显示备用方案
+                container.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: #fff;">
+                        <h2 style="margin-bottom: 20px;">⚠️ 在线模拟器加载失败</h2>
+                        <p style="margin-bottom: 20px;">您可以：</p>
+                        <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                            <a href="${ROM_FILE}" download class="links" style="background: #4fc3f7; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                                📥 下载 ROM 文件
+                            </a>
+                            <p style="color: #888; font-size: 0.9rem;">
+                                下载后使用 <a href="https://emulatorjs.org/" target="_blank" style="color: #4fc3f7;">EmulatorJS</a> 或其他 GB 模拟器运行
+                            </p>
+                        </div>
+                    </div>
+                `;
+                errorEl.style.display = 'none';
+                versionInfo.textContent = '请下载报告';
             }
         }
         
