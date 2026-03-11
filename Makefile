@@ -27,11 +27,11 @@ all: $(BINDIR)/$(PROJECTNAME).gb
 # 编译 .c 到 .o
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(OBJDIR)
-	$(LCC) -mgbz80:gb -c -o $@ $<
+	$(LCC) -msm83:gb -c -o $@ $<
 
 # 链接 .o 到 .gb
 $(BINDIR)/$(PROJECTNAME).gb: $(OBJS)
-	$(LCC) $(LCCFLAGS) -mgbz80:gb -o $@ $(OBJS)
+	$(LCC) $(LCCFLAGS) -msm83:gb -o $@ $(OBJS)
 
 # 清理
 clean:
