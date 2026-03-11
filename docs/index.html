@@ -29,10 +29,13 @@
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-        iframe {
-            border: none;
-            border-radius: 10px;
+        #game-container {
+            width: 640px;
+            height: 576px;
+            max-width: 100%;
             background: #000;
+            border-radius: 10px;
+            overflow: hidden;
         }
         .controls-info {
             margin-top: 20px;
@@ -43,7 +46,7 @@
         }
         .key-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 10px;
             margin-top: 10px;
         }
@@ -83,6 +86,13 @@
             color: #ef5350;
             display: none;
         }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #888;
+        }
     </style>
 </head>
 <body>
@@ -90,7 +100,9 @@
     <div class="version-info" id="versionInfo">正在加载游戏...</div>
 
     <div class="game-frame">
-        <iframe id="game-frame" width="640" height="576" src="about:blank"></iframe>
+        <div id="game-container">
+            <div class="loading">正在加载模拟器...</div>
+        </div>
     </div>
 
     <div class="controls-info">
@@ -114,64 +126,53 @@
     <script>
         const ROM_FILE = '2048.gb';
         
-        // 使用 lzh995535 的 JS Game Boy 模拟器
-        const emulatorHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        * { margin: 0; padding: 0; }
-        body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
-    </style>
-</head>
-<body>
-    <canvas id="canvas"></canvas>
-    <script src="https://cdn.jsdelivr.net/gh/lzh995535/js-gameboy@master/dist/js-gameboy.min.js"><\/script>
-    <script>
-        const gb = new GameBoy(document.getElementById('canvas'), '${ROM_FILE}', {
-            width: 160,
-            height: 144,
-            scale: 4,
-            autoStart: true
-        });
-        gb.load().then(() => {
-            gb.start();
-            console.log('Game loaded!');
-        }).catch(err => {
-            console.error('Load failed:', err);
-        });
-    <\/script>
-</body>
-</html>`;
-
-        // 加载模拟器
-        function loadEmulator() {
-            const iframe = document.getElementById('game-frame');
-            const blob = new Blob([emulatorHTML], { type: 'text/html' });
-            iframe.src = URL.createObjectURL(blob);
+        // 使用 Ruffle/EmulatorJS 的替代方案
+        async function loadEmulator() {
+            const container = document.getElementById('game-container');
+            const versionInfo = document.getElementById('versionInfo');
+            const errorEl = document.getElementById('error');
             
-            iframe.onload = () => {
-                document.getElementById('versionInfo').textContent = '游戏运行中';
-                console.log('模拟器加载完成');
-            };
-            
-            iframe.onerror = () => {
-                document.getElementById('error').textContent = '⚠️ 模拟器加载失败，请刷新页面';
-                document.getElementById('error').style.display = 'block';
-            };
-            
-            // 超时检测
-            setTimeout(() => {
-                if (document.getElementById('versionInfo').textContent === '正在加载游戏...') {
-                    document.getElementById('error').textContent = '⚠️ 加载超时，请刷新页面';
-                    document.getElementById('error').style.display = 'block';
-                }
-            }, 10000);
+            try {
+                // 动态加载 EmulatorJS
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://unpkg.com/emulatorjs@latest/data/emulator.min.js';
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('EmulatorJS 加载失败'));
+                    document.head.appendChild(script);
+                });
+                
+                versionInfo.textContent = '正在加载 ROM...';
+                
+                // 配置
+                window.EJS_player = '#game-container';
+                window.EJS_gameUrl = ROM_FILE;
+                window.EJS_core = 'gb';
+                window.EJS_pathtodata = 'https://unpkg.com/emulatorjs@latest/data/';
+                window.EJS_startOnLoaded = true;
+                window.EJS_color = '#4fc3f7';
+                window.EJS_enableCheats = false;
+                
+                console.log('EmulatorJS 配置完成');
+                
+                // 等待初始化
+                setTimeout(() => {
+                    if (window.EJS_emulator) {
+                        versionInfo.textContent = '🎮 游戏运行中';
+                        console.log('游戏已启动');
+                    } else {
+                        throw new Error('模拟器初始化超时');
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                console.error('加载失败:', error);
+                errorEl.textContent = '⚠️ ' + error.message + ' - 请刷新页面重试';
+                errorEl.style.display = 'block';
+                versionInfo.textContent = '加载失败';
+            }
         }
-
-        // 启动
+        
         loadEmulator();
     </script>
 </body>
