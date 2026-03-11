@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="rom-version" content="v0.9.2">
+    <meta name="rom-version" content="v0.9.3">
     <title>2048 Game Boy - 在线游玩</title>
+    <!-- 加载 pako 用于 gzip 解压 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -127,7 +129,6 @@
     <script>
         // 获取版本化的 ROM 文件名
         function getRomFilename() {
-            // 尝试从页面 meta 标签获取版本
             const metaVersion = document.querySelector('meta[name="rom-version"]');
             if (metaVersion) {
                 return `2048-${metaVersion.content}.gb`;
@@ -136,27 +137,50 @@
         }
         
         const ROM_FILE = getRomFilename();
+        let ROM_BLOB_URL = null;
         
-        // 检查 ROM 文件是否存在
-        async function checkRomFile() {
+        // 下载并解压 ROM 文件
+        async function downloadAndDecompressRom() {
+            const versionInfo = document.getElementById('versionInfo');
+            versionInfo.textContent = '正在下载 ROM...';
+            
             try {
-                const response = await fetch(ROM_FILE, { 
-                    method: 'HEAD',
-                    cache: 'no-cache'
-                });
+                // 下载压缩的 ROM 文件
+                const response = await fetch(ROM_FILE);
                 if (!response.ok) {
-                    throw new Error(`ROM 文件不存在 (HTTP ${response.status})`);
+                    throw new Error(`下载失败：HTTP ${response.status}`);
                 }
-                // 检查实际内容长度（解压后）
-                const size = response.headers.get('x-github-request-id') ? 
-                    response.headers.get('content-length') : 
-                    response.headers.get('content-length');
-                console.log(`ROM 文件：${ROM_FILE}`);
-                console.log(`Content-Length header: ${size}`);
-                console.log(`Content-Encoding: ${response.headers.get('content-encoding') || 'none'}`);
-                return true;
+                
+                const compressedBuffer = await response.arrayBuffer();
+                console.log(`下载的压缩数据：${compressedBuffer.byteLength} bytes`);
+                
+                // 检查是否是 gzip 格式 (magic number: 1f 8b)
+                const dataView = new DataView(compressedBuffer);
+                const isGzip = dataView.getUint8(0) === 0x1f && dataView.getUint8(1) === 0x8b;
+                console.log(`是 gzip 格式：${isGzip}`);
+                
+                let romBuffer;
+                if (isGzip) {
+                    // 使用 pako 解压 gzip
+                    versionInfo.textContent = '正在解压 ROM...';
+                    const uint8Array = new Uint8Array(compressedBuffer);
+                    romBuffer = pako.inflate(uint8Array).buffer;
+                    console.log(`解压后大小：${romBuffer.byteLength} bytes`);
+                } else {
+                    // 不是 gzip，直接使用
+                    romBuffer = compressedBuffer;
+                    console.log(`原始 ROM 大小：${romBuffer.byteLength} bytes`);
+                }
+                
+                // 创建 Blob URL
+                const blob = new Blob([romBuffer], { type: 'application/octet-stream' });
+                ROM_BLOB_URL = URL.createObjectURL(blob);
+                console.log('ROM Blob URL 创建成功');
+                
+                return ROM_BLOB_URL;
+                
             } catch (error) {
-                console.error('ROM 文件检查失败:', error);
+                console.error('ROM 下载/解压失败:', error);
                 throw error;
             }
         }
@@ -168,9 +192,8 @@
             const container = document.getElementById('game-container');
             
             try {
-                // 先检查 ROM 文件
-                versionInfo.textContent = '正在检查 ROM...';
-                await checkRomFile();
+                // 下载并解压 ROM
+                const romUrl = await downloadAndDecompressRom();
                 
                 // 加载 EmulatorJS
                 versionInfo.textContent = '正在加载模拟器...';
@@ -182,22 +205,22 @@
                     document.head.appendChild(script);
                 });
                 
-                versionInfo.textContent = '正在加载 ROM...';
+                versionInfo.textContent = '正在启动游戏...';
                 
                 // 等待初始化
                 await new Promise(r => setTimeout(r, 500));
                 
-                // 配置
+                // 配置 - 使用 Blob URL
                 window.EJS_player = '#game-container';
-                window.EJS_gameUrl = ROM_FILE;
+                window.EJS_gameUrl = romUrl;
                 window.EJS_core = 'gb';
                 window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
                 window.EJS_startOnLoaded = true;
                 window.EJS_color = '#4fc3f7';
                 
-                console.log('EmulatorJS 配置完成，ROM:', ROM_FILE);
+                console.log('EmulatorJS 配置完成，ROM URL:', romUrl);
                 
-                // 等待渲染 - 延长检查时间
+                // 等待渲染
                 let checkCount = 0;
                 const checkCanvas = setInterval(() => {
                     checkCount++;
