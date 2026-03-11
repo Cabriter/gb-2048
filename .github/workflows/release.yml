@@ -21,9 +21,9 @@ jobs:
 
       - name: 安装 GBDK-2020
         run: |
-          # 使用 GitHub API 获取最新 release 的下载链接
+          # 使用 GitHub API 获取最新 release 的下载链接 (x86_64 版本)
           LATEST_JSON=$(curl -s https://api.github.com/repos/gbdk-2020/gbdk-2020/releases/latest)
-          DOWNLOAD_URL=$(echo "$LATEST_JSON" | grep -o '"browser_download_url": "[^"]*linux[^"]*\.tar\.gz"' | head -1 | cut -d'"' -f4)
+          DOWNLOAD_URL=$(echo "$LATEST_JSON" | grep -o '"browser_download_url": "[^"]*linux[^"]*\.tar\.gz"' | grep -v 'arm64' | head -1 | cut -d'"' -f4)
           echo "Downloading: $DOWNLOAD_URL"
           curl -L -o gbdk.tar.gz "$DOWNLOAD_URL"
           tar -xzf gbdk.tar.gz
